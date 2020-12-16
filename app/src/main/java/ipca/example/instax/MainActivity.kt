@@ -3,14 +3,18 @@ package ipca.example.instax
 import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Bundle
+import android.os.Handler
 import android.provider.MediaStore
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
-import android.view.TextureView
+import android.view.View
+import android.view.ViewGroup
+import android.widget.BaseAdapter
 import android.widget.ImageView
+import android.widget.ListView
 import android.widget.TextView
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -22,18 +26,19 @@ import com.google.firebase.ktx.Firebase
 class MainActivity : AppCompatActivity() {
 
     val REQUEST_IMAGE_CAPTURE = 1343
-    lateinit var textViewHello : TextView
-    lateinit var imageView : ImageView
+
+    lateinit var  listView : ListView
+
+    var adapter : PhotosAdapapter? = null
+
+    var photos : MutableList<InstaPhoto> = arrayListOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        textViewHello = findViewById(R.id.textViewHello)
-        imageView = findViewById(R.id.imageView)
-
         val database = Firebase.database
-        val myRef = database.getReference("message")
+        val myRef = database.getReference("allphotos")
 
         findViewById<FloatingActionButton>(R.id.fab).setOnClickListener { view ->
             Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
@@ -43,11 +48,18 @@ class MainActivity : AppCompatActivity() {
             dispatchTakePictureIntent()
         }
 
+        listView = findViewById(R.id.listView)
+        adapter = PhotosAdapapter()
+        listView.adapter = adapter
+
         myRef.addValueEventListener(object : ValueEventListener{
             override fun onDataChange(snapshot: DataSnapshot) {
-                val value = snapshot.getValue<String>()
-                textViewHello.text = value
-
+                photos.clear()
+                for(s in snapshot.children) {
+                    val instaPhoto = InstaPhoto.fromSnapshot(s)
+                    photos.add(instaPhoto)
+                }
+                adapter?.notifyDataSetChanged()
             }
 
             override fun onCancelled(error: DatabaseError) {
@@ -55,6 +67,32 @@ class MainActivity : AppCompatActivity() {
             }
 
         })
+
+
+
+    }
+
+    inner class PhotosAdapapter : BaseAdapter()  {
+        override fun getCount(): Int {
+            return photos.size
+        }
+
+        override fun getItem(p0: Int): Any {
+            return photos[p0]
+        }
+
+        override fun getItemId(p0: Int): Long {
+            return 0
+        }
+
+        override fun getView(p0: Int, p1: View?, p2: ViewGroup?): View {
+            val rootView = layoutInflater.inflate(R.layout.row_instax, p2,false)
+
+            val textViewDescription= rootView.findViewById<TextView>(R.id.textViewDescription)
+            textViewDescription.text = photos[p0].description
+
+            return rootView
+        }
 
     }
 
@@ -74,7 +112,14 @@ class MainActivity : AppCompatActivity() {
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
             data?.extras?.let {
                 val imageBitmap = it.get("data") as Bitmap
-                imageView.setImageBitmap(imageBitmap)
+                //imageView.setImageBitmap(imageBitmap)
+                Handler().postDelayed({
+
+                    val intent = Intent(this@MainActivity, PostActivity::class.java)
+                    intent.putExtra("data", imageBitmap)
+                    startActivity(intent)
+                }, 1000)
+
             }
 
         }
