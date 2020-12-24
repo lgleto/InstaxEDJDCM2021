@@ -62,10 +62,10 @@ class InstaPhoto {
         fun fromSnapshot( s : DataSnapshot) : InstaPhoto {
             val item : InstaPhoto = InstaPhoto()
             s.child("filePath")
-            item.filePath = s.child("filePath").toString()
-            item.description = s.child("description").toString()
-            item.userId = s.child("userId").toString()
-            item.userName = s.child("userName").toString()
+            item.filePath = s.child("filePath").value.toString()
+            item.description = s.child("description").value.toString()
+            item.userId = s.child("userId").value.toString()
+            item.userName = s.child("userName").value.toString()
             return item
         }
     }

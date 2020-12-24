@@ -16,12 +16,15 @@ import android.widget.BaseAdapter
 import android.widget.ImageView
 import android.widget.ListView
 import android.widget.TextView
+import com.bumptech.glide.Glide
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.database
 import com.google.firebase.database.ktx.getValue
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.ktx.storage
 
 class MainActivity : AppCompatActivity() {
 
@@ -33,12 +36,16 @@ class MainActivity : AppCompatActivity() {
 
     var photos : MutableList<InstaPhoto> = arrayListOf()
 
+    private lateinit var storage: FirebaseStorage
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         val database = Firebase.database
         val myRef = database.getReference("allphotos")
+        storage = Firebase.storage
+        var storageRef = storage.reference
 
         findViewById<FloatingActionButton>(R.id.fab).setOnClickListener { view ->
             Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
@@ -89,7 +96,15 @@ class MainActivity : AppCompatActivity() {
             val rootView = layoutInflater.inflate(R.layout.row_instax, p2,false)
 
             val textViewDescription= rootView.findViewById<TextView>(R.id.textViewDescription)
+            val imageViewPhoto= rootView.findViewById<ImageView>(R.id.imageViewPhoto)
             textViewDescription.text = photos[p0].description
+            val gsReference = storage.getReferenceFromUrl(photos[p0].filePath?:"")
+            gsReference.downloadUrl.addOnSuccessListener {
+                var downloadUrl : String =  it.toString()?:""
+                Glide.with(this@MainActivity)
+                        .load(downloadUrl)
+                        .into(imageViewPhoto)
+            }
 
             return rootView
         }
